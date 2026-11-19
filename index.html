@@ -492,6 +492,58 @@
     font-weight: 400;
   }
 
+
+  /* Contact form */
+  .contact-form {
+    max-width: 640px;
+    margin: 64px auto 0;
+    text-align: left;
+    display: grid;
+    gap: 20px;
+  }
+  .contact-form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .contact-form label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .contact-form input, .contact-form textarea {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    transition: border-color 0.3s;
+  }
+  .contact-form input:focus, .contact-form textarea:focus { outline: none; border-color: var(--gold); }
+  .contact-form textarea { min-height: 140px; resize: vertical; }
+  .contact-form button {
+    justify-self: start;
+    padding: 14px 36px;
+    background: var(--gold);
+    color: var(--navy);
+    border: 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .contact-form button:hover { background: var(--gold-light); transform: translateY(-2px); }
+  .contact-form button:disabled { opacity: 0.6; cursor: default; transform: none; }
+  .form-status { font-size: 14px; min-height: 20px; }
+  .form-status.ok { color: var(--gold-light); }
+  .form-status.err { color: #e57373; }
+  .hp { position: absolute; left: -9999px; }
+  @media (max-width: 768px) { .contact-form .row { grid-template-columns: 1fr; } }
+
   /* Footer */
   footer {
     padding: 32px 80px;
@@ -966,6 +1018,21 @@
       </a>
     </div>
   </div>
+
+  <form class="contact-form" id="contactForm" novalidate>
+    <input type="hidden" name="access_key" value="YOUR_WEB3FORMS_ACCESS_KEY">
+    <input type="hidden" name="subject" value="New message from shoukathaly.com">
+    <input type="hidden" name="from_name" value="shoukathaly.com contact form">
+    <input type="checkbox" name="botcheck" class="hp" tabindex="-1" autocomplete="off">
+    <div class="row">
+      <div><label for="cf-name">Name</label><input id="cf-name" name="name" type="text" required autocomplete="name"></div>
+      <div><label for="cf-email">Email</label><input id="cf-email" name="email" type="email" required autocomplete="email"></div>
+    </div>
+    <div><label for="cf-company">Company / Organisation (optional)</label><input id="cf-company" name="company" type="text" autocomplete="organization"></div>
+    <div><label for="cf-message">Message</label><textarea id="cf-message" name="message" required></textarea></div>
+    <button type="submit" id="cfBtn">Send Message</button>
+    <div class="form-status" id="cfStatus" role="status" aria-live="polite"></div>
+  </form>
 </section>
 
 <!-- CONTACT CARD -->
@@ -1047,6 +1114,31 @@
 </footer>
 
 <script>
+// Contact form
+  (function(){
+    var f = document.getElementById('contactForm');
+    if (!f) return;
+    var btn = document.getElementById('cfBtn'), st = document.getElementById('cfStatus');
+    f.addEventListener('submit', function(e){
+      e.preventDefault();
+      st.className = 'form-status';
+      if (!f.name.value.trim() || !/^\S+@\S+\.\S+$/.test(f.email.value) || !f.message.value.trim()) {
+        st.className = 'form-status err'; st.textContent = 'Please fill in your name, a valid email and a message.'; return;
+      }
+      btn.disabled = true; btn.textContent = 'Sending…'; st.textContent = '';
+      fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(new FormData(f)))
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (d.success) { f.reset(); st.className = 'form-status ok'; st.textContent = 'Thank you, your message has been sent.'; }
+        else { throw new Error(d.message || 'failed'); }
+      }).catch(function(){
+        st.className = 'form-status err'; st.textContent = 'Sorry, something went wrong. Please email sajar@shoukathaly.com directly.';
+      }).finally(function(){ btn.disabled = false; btn.textContent = 'Send Message'; });
+    });
+  })();
+
 // vCard download
   function downloadVCard() {
     var vcard = [
